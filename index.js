@@ -106,8 +106,9 @@ startKommander = function() {
 	started = true;
 	setTimeout(function() {
 		kommand.run(6969, "0.0.0.0", false);
+		console.log("kommander is running...\nwaiting for kommands...")
 		kommand.on('data', function(cmd) {
-			console.log(cmd);
+			console.log("kommand:" cmd);
 			cmd = cmd.toLowerCase();
 
 			tessel.led[1].write(1);
