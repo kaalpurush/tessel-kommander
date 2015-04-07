@@ -24,12 +24,7 @@ function powerCycle(){
     timeouts = 0; // reset timeouts
     console.log("done power cycling");
     // give it some time to auto reconnect
-    setTimeout(function(){
-      if (!wifi.isConnected()) {
-        // try to reconnect
-        connectWifi();
-      }
-      }, 20 * 1000); // 20 second wait
+    tryConnectWifi();
   })
 }
 
@@ -37,20 +32,12 @@ function powerCycle(){
 // connect to the wifi network
 // check if the wifi chip is busy (currently trying to connect), if not, try to connect
 function tryConnectWifi() {
-	if (!wifi.isBusy()) {
+	if(!wifi.isConnected() && !wifi.isBusy())
 		connectWifi();
-	} else {
-		// The cc3k is set up to automatically try to connect on boot. 
-		// For the first few seconds of program bootup, you'll always 
-		// see the wifi chip as being "busy"
-		console.log("is busy, trying again");
-		setTimeout(function() {
-			tryConnectWifi();
-		}, 1 * 1000);
-	}
 }
 
 function connectWifi() {
+	console.log('conecting to wifi...');
 	wifi.connect({
 		security: security,
 		ssid: network,
@@ -72,22 +59,15 @@ function registerWifiEvent() {
 	wifi.on('disconnect', function(err, data) {
 		// wifi dropped, probably want to call connect() again		
 		console.log("wifi disconnect emitted", err, data);
-		timer=setInterval(function(){
-			connectWifi();
-		},10 * 1000);
+		stopKommander();
+		tryConnectWifi();		
 	});
 	
 	wifi.on('timeout', function(err){
 		// tried to connect but couldn't, retry
 		console.log("wifi timeout emitted");
-		timeouts++;
-		if (timeouts > 2) {
-			// reset the wifi chip if we've timed out too many times
-			powerCycle();
-		} else {
-			// try to reconnect
-			connectWifi();
-		}
+		stopKommander();
+		powerCycle();
 	});
 
 	wifi.on('error', function(err) {
@@ -96,16 +76,22 @@ function registerWifiEvent() {
 		// 2. tried to disconnect while in the middle of trying to connect
 		// 3. tried to initialize a connection without first waiting for a timeout or a disconnect
 		console.log("wifi error emitted", err);
-		timer=setInterval(function(){
-			connectWifi();
-		},10 * 1000);
+		stopKommander();
+		tryConnectWifi();
 	});
+}
+
+stopKommander=function(){
+	if(started){
+		kommand.stop();
+		started=false;
+	}
 }
 
 startKommander = function() {
 	started = true;
 	setTimeout(function() {
-		kommand.run(6969, "0.0.0.0", false);
+		kommand.start(6969, "0.0.0.0", false);
 		console.log("kommander is running...\nwaiting for kommands...")
 		kommand.on('data', function(cmd) {
 			console.log("kommand:", cmd);
