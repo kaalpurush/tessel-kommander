@@ -11,7 +11,6 @@ var wifi = require('wifi-cc3000');
 var network = config.wifi_network; // put in your network name here
 var pass = config.wifi_password; // put in your password here, or leave blank for unsecured
 var security = 'wpa2'; // other options are 'wep', 'wpa', or 'unsecured'
-var timer;
 
 var started = false;
 var timeouts = 0;
@@ -21,7 +20,7 @@ function powerCycle(){
   // when the wifi chip resets, it will automatically try to reconnect
   // to the last saved network
   wifi.reset(function(){
-    timeouts = 0; // reset timeouts
+	timeouts = 0; // reset timeouts
     console.log("done power cycling");
     // give it some time to auto reconnect
     tryConnectWifi();
@@ -49,11 +48,9 @@ function connectWifi() {
 function registerWifiEvent() {
 	wifi.on('connect', function(err, data) {
 		// you're connected 
-		if(timer)
-			timer.clearInterval();
-		if (!started)
-			startKommander();
 		console.log("wifi connect emitted", err, data);
+		if (!started)
+			startKommander();		
 	});
 
 	wifi.on('disconnect', function(err, data) {
@@ -67,7 +64,13 @@ function registerWifiEvent() {
 		// tried to connect but couldn't, retry
 		console.log("wifi timeout emitted");
 		stopKommander();
-		powerCycle();
+		if (timeouts > 2) {
+			// reset the wifi chip if we've timed out too many times
+			powerCycle();
+		} else {
+			// try to reconnect
+			tryConnectWifi();
+		}
 	});
 
 	wifi.on('error', function(err) {
