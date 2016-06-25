@@ -114,9 +114,12 @@ startKommander = function() {
 				gpio.digital[2].write(state);
 			else if (cmd.indexOf('light') >= 0)
 				gpio.digital[3].write(state);
+			else if (cmd.indexOf('ext') >= 0)
+				gpio.digital[4].write(state);
 			else if (cmd.indexOf('all') >= 0) {
 				gpio.digital[2].write(state);
 				gpio.digital[3].write(state);
+				gpio.digital[4].write(state);
 			}
 		});
 		tessel.led[0].write(1);
